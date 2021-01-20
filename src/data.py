@@ -2,6 +2,7 @@ import sys
 import omniglot
 import mini_imagenet
 import shapenet
+import celeba
 
 """
 General function that selects and initializes the particular dataset to use for
@@ -18,6 +19,8 @@ def get_data(dataset, mode='train'):
                                      seed=111)
     elif dataset == 'miniImageNet':
         return mini_imagenet.MiniImageNetData(path='../data', seed=42)
+    elif dataset == 'celebA':
+        return celeba.CelebAData(path='', seed=42)
     elif dataset == 'shapenet':
         return shapenet.ShapeNetData(path='../data',
                                      train_fraction=0.7,
