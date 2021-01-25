@@ -268,6 +268,6 @@ class CelebAData(object):
         return '/'.join(joined)
 
 
-
-dataset = CelebAData('', 123)
-dataset.get_batch('train', 10, 4, 2, 7)
+def test():
+    dataset = CelebAData(123)
+    dataset.get_batch('train', 10, 4, 2, 7)
