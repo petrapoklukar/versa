@@ -20,7 +20,7 @@ def get_data(dataset, mode='train'):
     elif dataset == 'miniImageNet':
         return mini_imagenet.MiniImageNetData(path='../data', seed=42)
     elif dataset == 'celebA':
-        return celeba.CelebAData(path='', seed=42)
+        return celeba.CelebAData(seed=42)
     elif dataset == 'shapenet':
         return shapenet.ShapeNetData(path='../data',
                                      train_fraction=0.7,

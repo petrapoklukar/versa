@@ -57,6 +57,47 @@ def gaussian_log_density(inputs, mu, logVariance):
 TensorFlow Network Support Functions
 """
 
+def conv2d_pool_block_custom(inputs, use_batch_norm, dropout_keep_prob, pool_padding, name, filters):
+    """
+    A macro function that implements the following in sequence:
+    - conv2d
+    - batch_norm
+    - relu activation
+    - dropout
+    - max_pool
+    :param inputs: batch of feature maps.
+    :param use_batch_norm: whether to use batch normalization or not.
+    :param dropout_keep_prob: keep probability parameter for dropout.
+    :param pool_padding: type of padding to use on the pooling operation.
+    :param name: first part of the name used to scope this sequence of operations.
+    :return: the processed batch of feature maps.
+    """
+    h = tf.layers.conv2d(
+        inputs=inputs,
+        strides=(1, 1),
+        filters=filters,
+        kernel_size=[3, 3],
+        padding="same",
+        kernel_initializer=xavier_initializer_conv2d(uniform=False),
+        use_bias=False,
+        name=(name + '_conv2d'),
+        reuse=tf.AUTO_REUSE)
+
+    if use_batch_norm:
+        h = tf.contrib.layers.batch_norm(
+            inputs=h,
+            epsilon=1e-5,
+            scope=(name + '_batch_norm'),
+            reuse=tf.AUTO_REUSE)
+
+    h = tf.nn.relu(features=h, name=(name + '_batch_relu'))
+
+    h = tf.nn.dropout(x=h, keep_prob=dropout_keep_prob, name=(name + '_dropout'))
+
+    h = tf.layers.max_pooling2d(inputs=h, pool_size=[2, 2], strides=2, padding=pool_padding, name=(name + '_pool'))
+
+    return h
+
 
 def conv2d_pool_block(inputs, use_batch_norm, dropout_keep_prob, pool_padding, name):
     """

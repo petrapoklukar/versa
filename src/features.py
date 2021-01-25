@@ -1,11 +1,9 @@
 import tensorflow as tf
-from utilities import conv2d_pool_block, conv2d_transpose_layer, dense_layer, dense_block
+from utilities import conv2d_pool_block, conv2d_transpose_layer, dense_layer, dense_block, conv2d_pool_block_custom
 
 
-def extract_features_shapenet(images, output_size, use_batch_norm, dropout_keep_prob):
+def extract_features_celeba(images, output_size, use_batch_norm, dropout_keep_prob):
     """
-    Based on the architecture described in 'Matching Networks for One-Shot Learning'
-    http://arxiv.org/abs/1606.04080.pdf.
     :param images: batch of images.
     :param output_size: dimensionality of the output features.
     :param use_batch_norm: whether to use batch normalization or not.
@@ -14,10 +12,10 @@ def extract_features_shapenet(images, output_size, use_batch_norm, dropout_keep_
     """
 
     # 4X conv2d + pool blocks
-    h = conv2d_pool_block(images, use_batch_norm, dropout_keep_prob, 'same','fe_block_1')
-    h = conv2d_pool_block(h, use_batch_norm, dropout_keep_prob, 'same','fe_block_2')
-    h = conv2d_pool_block(h, use_batch_norm, dropout_keep_prob, 'same','fe_block_3')
-    h = conv2d_pool_block(h, use_batch_norm, dropout_keep_prob, 'same', 'fe_block_4')
+    h = conv2d_pool_block_custom(images, use_batch_norm, dropout_keep_prob, 'same','fe_block_1', 64)
+    h = conv2d_pool_block_custom(h, use_batch_norm, dropout_keep_prob, 'same','fe_block_2', 64)
+    h = conv2d_pool_block_custom(h, use_batch_norm, dropout_keep_prob, 'same','fe_block_3', 64)
+    h = conv2d_pool_block_custom(h, use_batch_norm, dropout_keep_prob, 'same', 'fe_block_4', 16)
 
     # flatten output
     h = tf.contrib.layers.flatten(h)

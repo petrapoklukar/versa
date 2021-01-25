@@ -38,7 +38,7 @@ from __future__ import print_function
 import numpy as np
 import tensorflow as tf
 import argparse
-from features import extract_features_omniglot, extract_features_mini_imagenet
+from features import extract_features_omniglot, extract_features_mini_imagenet, extract_features_celeba
 from inference import infer_classifier
 from utilities import sample_normal, multinoulli_log_density, print_and_log, get_log_files
 from data import get_data
@@ -83,12 +83,12 @@ def parse_command_line():
     args = parser.parse_args()
     args.dataset = 'celebA'
     args.mode = "train_test"
-    args.d_theta = 256 # "Size of the feature extractor output."
+    args.d_theta = 64 # "Size of the feature extractor output."
     args.shot = 5 # "Number of training examples."
     args.way = 2 # "Number of classes."
     args.test_shot = 15 # Shot to be used at evaluation time. If not specified 'shot' will be used.")
     args.test_way = 2 #"Way to be used at evaluation time. If not specified 'way' will be used.")
-    args.tasks_per_batch = 24
+    args.tasks_per_batch = 6
     args.samples = 10 # "Number of samples from q.")
     args.learning_rate = 1e-4
     args.iterations = 10 
@@ -122,6 +122,8 @@ def main(unused_argv):
     feature_extractor_fn = extract_features_mini_imagenet
     if args.dataset == "Omniglot":
         feature_extractor_fn = extract_features_omniglot
+    if args.dataset == "celebA":
+        feature_extractor_fn = extract_features_celeba
 
     # evaluation samples
     eval_samples_train = 15
