@@ -38,10 +38,11 @@ def get_transform_images(df, path, base_folder):
     return np.concatenate(imgs)
 
 def main():
-    path = '../datasets/celeba/celeba/'
+    load_path = '/local_storage/datasets/celeba/celeba'
+    save_path = 'datasets/celeba/'
     attribute_filename = 'list_attr_celeba.txt'
     base_folder = 'img_align_celeba/'
-    attr = pd.read_csv(os.path.join(path, attribute_filename), delim_whitespace=True, header=1)
+    attr = pd.read_csv(os.path.join(load_path, attribute_filename), delim_whitespace=True, header=1)
     attr = (attr + 1) // 2
     
     n_train_imgs = 162770
@@ -68,24 +69,24 @@ def main():
     test_attr_pd['id'] = test_attr_pd.reset_index().index
 
     train_dict = {
-        'img_array': get_transform_images(train_attr_pd, path, base_folder),
+        'img_array': get_transform_images(train_attr_pd, load_path, base_folder),
         'attr_pd': train_attr_pd,
         'attr_list': train_attr_idx}
-    with open(os.path.join(path, 'train.pkl'), 'wb') as f:
+    with open(os.path.join(save_path, 'train.pkl'), 'wb') as f:
         pickle.dump(train_dict, f)
         
     validation_dict = {
-        'img_array': get_transform_images(validation_attr_pd, path, base_folder),
+        'img_array': get_transform_images(validation_attr_pd, load_path, base_folder),
         'attr_pd': validation_attr_pd,
         'attr_list': validation_attr_idx}
-    with open(os.path.join(path, 'validation.pkl'), 'wb') as f:
+    with open(os.path.join(save_path, 'validation.pkl'), 'wb') as f:
         pickle.dump(validation_dict, f)
         
     test_dict = {
-        'img_array': get_transform_images(test_attr_pd, path, base_folder),
+        'img_array': get_transform_images(test_attr_pd, load_path, base_folder),
         'attr_pd': test_attr_pd,
         'attr_list': test_attr_idx}
-    with open(os.path.join(path, 'test.pkl'), 'wb') as f:
+    with open(os.path.join(save_path, 'test.pkl'), 'wb') as f:
         pickle.dump(test_dict, f)
 
 main()
