@@ -1,10 +1,11 @@
 import numpy as np
 import os
 import re
-from PIL import Image
+# from PIL import Image
 import pandas as pd
 pd.options.mode.chained_assignment = None
-import torchvision.transforms as transforms
+# import torchvision.transforms as transforms
+import pickle
 
 def onehottify_2d_array(a):
     """
@@ -40,17 +41,35 @@ class CelebAData(object):
         self.image_width = 84
         self.image_channels = 3
 
-        self.path = '/local_storage/datasets/celeba/celeba'# '/home/petra/Documents/PhD/Repos/datasets/celeba/celeba'
+        # self.path = '/local_storage/datasets/celeba/celeba'# 
+        self.path = '/home/petra/Documents/PhD/Repos/datasets/celeba/celeba'
         self.base_folder = "img_align_celeba/"
         self.attribute_filename = 'list_attr_celeba.txt'
-        self.attr = pd.read_csv(os.path.join(self.path, self.attribute_filename), delim_whitespace=True, header=1)
-        self.attr = (self.attr + 1) // 2  # map from {-1, 1} to {0, 1}
-        self.attr_names = list(self.attr.columns)
-        self.num_total_attr = len(self.attr_names)
-        self.test_attr_idx = np.array([32, 0, 35, 17, 18, 39, 10, 14, 21, 24])
-        self.train_attr_idx = np.setdiff1d(np.arange(self.num_total_attr), self.test_attr_idx)
-        self.id_to_name_fn = lambda x: self.attr_names[x]
+        
+        # Load all pkl
+        with open(os.path.join(self.path, 'train_imgs', 'train.pkl'), 'rb') as f:
+            train_dict = pickle.load(f)
+            self.train_attr_df = train_dict['attr_pd'] # Already scaled to -1, 1
+            self.train_attr_idx = train_dict['attr_list'] 
+            self.train_imgs = train_dict['img_array']
+        
+        with open(os.path.join(self.path, 'validation_imgs', 'validation.pkl'), 'rb') as f:
+            validation_dict = pickle.load(f)
+            self.validation_attr_df = validation_dict['attr_pd'] # Already scaled to -1, 1
+            self.validation_attr_idx = validation_dict['attr_list'] 
+            self.validation_imgs = validation_dict['img_array']
+        
+        with open(os.path.join(self.path, 'test_imgs', 'test.pkl'), 'rb') as f:
+            test_dict = pickle.load(f)
+            self.test_attr_df = test_dict['attr_pd'] # Already scaled to -1, 1
+            self.test_attr_idx = test_dict['attr_list']
+            self.test_imgs = test_dict['img_array']
+            
 
+        self.attr_names = list(self.train_attr_df.columns)
+        self.num_total_attr = len(self.attr_names)
+        self.id_to_name_fn = lambda x: self.attr_names[x]
+        np.random.seed(seed)
 
     def get_image_height(self):
         return self.image_height
@@ -105,14 +124,27 @@ class CelebAData(object):
         xq = np.zeros((tasks_per_batch, way * eval_samples, self.image_height, self.image_width, self.image_channels),
                       dtype=np.float32)
         yq = np.zeros((tasks_per_batch, way * eval_samples), dtype=np.int32)
-        # labels = np.zeros((self.batch_size, num_attr), dtype=np.int64)
+        
         for i in range(tasks_per_batch):
-            positive_samples, negative_samples, positive_attr = self.filter_attr(source, 2,
-                                                                                 shot + eval_samples, 
-                                                                                 np.array([-1, -1]))
-            xs[i], ys[i] = self.get_imgs(positive_samples, negative_samples, shot)
-            xq[i], yq[i] = self.get_imgs(positive_samples, negative_samples, eval_samples)
-            # labels[i] = positive_attr
+            positive_images, negative_images = self.filter_attr(source, 2, shot + eval_samples, np.array([-1, -1]))
+            assert(positive_images.shape == negative_images.shape)
+            
+            support_idx = np.random.choice(np.arange(len(positive_images)), size=shot, replace=False)
+            query_idx = np.setdiff1d(np.arange(len(positive_images)), support_idx)
+            assert(len(query_idx) == eval_samples)
+            
+            support_imgs = np.concatenate([positive_images[support_idx], negative_images[support_idx]])
+            support_labels = np.concatenate([np.repeat(1, shot), np.repeat(0, shot)])
+            support_permutation = np.arange(shot * way)
+            np.random.shuffle(support_permutation)
+
+            query_imgs = np.concatenate([positive_images[query_idx], negative_images[query_idx]])
+            query_labels = np.concatenate([np.repeat(1, eval_samples), np.repeat(0, eval_samples)])
+            query_permutation = np.arange(eval_samples * way)
+            np.random.shuffle(query_permutation)
+            
+            xs[i], ys[i] = support_imgs[support_permutation], support_labels[support_permutation]
+            xq[i], yq[i] = query_imgs[query_permutation], query_labels[query_permutation]
 
         # labels to one-hot encoding
         ys = onehottify_2d_array(ys)
@@ -131,65 +163,37 @@ class CelebAData(object):
             train_images[i, ...] = train_images[i, permutation, ...]
             train_labels[i, ...] = train_labels[i, permutation, ...]
         return train_images, train_labels
-    
-    @staticmethod
-    def sorted_nicely(l):
-        """ Sorts numbers in strings numerically as opposed to alphabetically
-        """
-        convert = lambda text: int(text) if text.isdigit() else text
-        alphanum_key = lambda key: [convert(c) for c in re.split('([0-9]+)', key)]
-        return sorted(l, key=alphanum_key)
 
-    def transform(self, image):
-        """
-        Equivalent to transform = transforms.Compose([
-            transforms.CenterCrop(168),
-            transforms.Resize(self.img_size),
-            transforms.ToTensor(),
-            transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
-            lambda t: t.unsqueeze(0)])
-        :param image: numpy array of shape [height, width, 3]
-        :return: image: numpy array of shape [1, 84, 84, 3]
-        """
-        trans = transforms.Compose([transforms.CenterCrop(168), transforms.Resize(84)])
-        image = trans(image)
-        image = np.float32(np.transpose(image, [2, 0, 1])) / 255.
-        for channel in range(image.shape[0]):
-            image[channel] = (image[channel] - 0.5) / 0.5
-        image = image.transpose(1, 2, 0) # 84, 84, 3
-        image = image[np.newaxis]
-        
-        return image
-
-
-    def get_imgs(self, positive_samples, negative_samples, num_imgs):
-        df = pd.concat([positive_samples.sample(n=num_imgs),
-                        negative_samples.sample(n=num_imgs)])
-        df_reshuffled = df.reindex(np.random.permutation(df.index))
-
-        imgs = []
-        for img_name in list(df_reshuffled.index):
-            img = Image.open(os.path.join(self.path, self.base_folder, img_name))
-            img = self.transform(img)
-            imgs.append(img)
-        #reshaped_imgs = np.concatenate(imgs)[np.newaxis]
-        return np.concatenate(imgs), df_reshuffled['nway_label'].values
 
     def filter_attr(self, source, num_attr, min_num, positive_attr=np.array([-1, -1])):
         if positive_attr[0] < 0 and source == 'train':
-            positive_attr = np.random.choice(self.train_attr_idx, size=num_attr)
-        elif positive_attr[0] < 0 and source != 'train':
-            positive_attr = np.random.choice(self.test_attr_idx, size=num_attr)
-        positive_condition = (self.attr.iloc[:, positive_attr] == 1).sum(axis=1) == num_attr
-        negative_condition = (self.attr.iloc[:, positive_attr] != 1).sum(axis=1) == num_attr
+            positive_attr_idx = np.random.choice(self.train_attr_idx, size=num_attr)
+            attr_df = self.train_attr_df
+            img_array = self.train_imgs
+        elif positive_attr[0] < 0 and source == 'validation':
+            positive_attr_idx = np.random.choice(self.validation_attr_idx, size=num_attr)
+            attr_df = self.validation_attr_df
+            img_array = self.validation_imgs
+        elif positive_attr[0] < 0 and source == 'test':
+            positive_attr_idx = np.random.choice(self.test_attr_idx, size=num_attr)
+            attr_df = self.test_attr_df
+            img_array = self.test_imgs
+        
+        positive_condition = (attr_df.iloc[:, positive_attr_idx] == 1).sum(axis=1) == num_attr
+        negative_condition = (attr_df.iloc[:, positive_attr_idx] != 1).sum(axis=1) == num_attr
+        
+        # For some combinations of attributes it might happen that we don't get enough images
         if positive_condition.sum() < min_num or negative_condition.sum() < min_num:
             return self.filter_attr(source, num_attr, min_num)
         else:
-            positive_samples = self.attr[positive_condition]
-            positive_samples['nway_label'] = np.repeat(1, len(positive_samples))
-            negative_samples = self.attr[negative_condition]
-            negative_samples['nway_label'] = np.repeat(0, len(negative_samples))
-            return positive_samples, negative_samples, positive_attr
+            positive_imgs_idx = np.random.choice(attr_df[positive_condition]['id'], 
+                                                 size=min_num, replace=False)
+            negative_imgs_idx = np.random.choice(attr_df[negative_condition]['id'], 
+                                                 size=min_num, replace=False)
+            
+            positive_imgs = img_array[positive_imgs_idx]
+            negative_imgs = img_array[negative_imgs_idx]
+            return positive_imgs, negative_imgs
 
     def ids_to_names(self, attr_ids):
         attr_names = []
@@ -202,3 +206,8 @@ class CelebAData(object):
         for elem in attr_names:
             joined.append('+'.join(elem))
         return '/'.join(joined)
+
+
+
+dataset = CelebAData('',123)
+dataset.get_batch('train', 10, 5, 2, 7)
