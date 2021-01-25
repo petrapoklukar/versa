@@ -68,25 +68,28 @@ def main():
     test_attr_pd = attr[n_train_imgs + n_validation_imgs:n_train_imgs + n_validation_imgs + n_test_imgs]
     test_attr_pd['id'] = test_attr_pd.reset_index().index
 
+
     train_dict = {
         'img_array': get_transform_images(train_attr_pd, load_path, base_folder),
         'attr_pd': train_attr_pd,
         'attr_list': train_attr_idx}
     with open(os.path.join(save_path, 'train.pkl'), 'wb') as f:
-        pickle.dump(train_dict, f)
+        pickle.dump(train_dict, f, protocol=4)
+    print('Saved train.')
         
     validation_dict = {
         'img_array': get_transform_images(validation_attr_pd, load_path, base_folder),
         'attr_pd': validation_attr_pd,
         'attr_list': validation_attr_idx}
     with open(os.path.join(save_path, 'validation.pkl'), 'wb') as f:
-        pickle.dump(validation_dict, f)
+        pickle.dump(validation_dict, f, protocol=4)
+    print('Saved validation.')    
         
     test_dict = {
         'img_array': get_transform_images(test_attr_pd, load_path, base_folder),
         'attr_pd': test_attr_pd,
         'attr_list': test_attr_idx}
     with open(os.path.join(save_path, 'test.pkl'), 'wb') as f:
-        pickle.dump(test_dict, f)
-
+        pickle.dump(test_dict, f, protocol=4)
+    print('Saved test.')
 main()
