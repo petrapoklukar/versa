@@ -22,8 +22,8 @@ def transform(image):
     trans = transforms.Compose([transforms.CenterCrop(min(image.size)), transforms.Resize(84)])
     image = trans(image)
     image = np.float32(np.transpose(image, [2, 0, 1])) / 255.
-    for channel in range(image.shape[0]):
-        image[channel] = (image[channel] - 0.5) / 0.5
+    # for channel in range(image.shape[0]):
+    #     image[channel] = (image[channel] - 0.5) / 0.5
     image = image.transpose(1, 2, 0) # Size: 84, 84, 3
     image = image[np.newaxis]
     return image
