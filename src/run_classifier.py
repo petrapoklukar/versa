@@ -82,7 +82,7 @@ def parse_command_line():
     #                     help="Frequency of summary results (in iterations).")
     args = parser.parse_args()
     args.dataset = 'celebA'
-    args.mode = "train_test"
+    args.mode = "test"
     args.d_theta = 64 # "Size of the feature extractor output."
     args.shot = 5 # "Number of training examples."
     args.way = 2 # "Number of classes."
@@ -91,10 +91,10 @@ def parse_command_line():
     args.tasks_per_batch = 6
     args.samples = 10 # "Number of samples from q.")
     args.learning_rate = 1e-4
-    args.iterations = 10 
-    args.checkpoint_dir = './test/checkpoint'
+    args.iterations = 4
+    args.checkpoint_dir = './test'
     args.dropout = 0.9
-    args.test_model_path = ''
+    args.test_model_path = './test'
     args.print_freq = 2
 
     # adjust test_shot and test_way if necessary

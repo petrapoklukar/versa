@@ -251,8 +251,8 @@ class CelebAData(object):
             negative_imgs_idx = np.random.choice(attr_df[negative_condition]['id'], 
                                                  size=min_num, replace=False)
             
-            positive_imgs = img_array[positive_imgs_idx] / 255.
-            negative_imgs = img_array[negative_imgs_idx] / 255.
+            positive_imgs = np.float32(img_array[positive_imgs_idx] / 255.)
+            negative_imgs = np.float32(img_array[negative_imgs_idx] / 255.)
             return positive_imgs, negative_imgs, positive_attr_idx
 
     def ids_to_names(self, attr_ids):
