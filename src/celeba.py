@@ -41,10 +41,11 @@ class CelebAData(object):
         self.image_width = 84
         self.image_channels = 3
 
-        self.path = '/local_storage/datasets/celeba/celeba'# 
+        self.path = 'datasets/celeba'
+        # self.path = '/local_storage/datasets/celeba/celeba'# 
         # self.path = '/home/petra/Documents/PhD/Repos/datasets/celeba/celeba'
-        self.base_folder = "img_align_celeba/"
-        self.attribute_filename = 'list_attr_celeba.txt'
+        # self.base_folder = "img_align_celeba/"
+        # self.attribute_filename = 'list_attr_celeba.txt'
         
         # Load all pkl
         with open(os.path.join(self.path, 'train.pkl'), 'rb') as f:
