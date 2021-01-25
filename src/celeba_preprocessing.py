@@ -19,13 +19,14 @@ def transform(image):
     :param image: numpy array of shape [height, width, 3]
     :return: image: numpy array of shape [1, 84, 84, 3]
     """
-    trans = transforms.Compose([transforms.CenterCrop(min(image.size)), transforms.Resize(84)])
+    trans = transforms.Compose([
+        transforms.CenterCrop(min(image.size)), transforms.Resize(84)])
     image = trans(image)
-    image = np.float32(np.transpose(image, [2, 0, 1])) / 255.
+    # image = np.transpose(image, [2, 0, 1]) # / 255.
     # for channel in range(image.shape[0]):
     #     image[channel] = (image[channel] - 0.5) / 0.5
-    image = image.transpose(1, 2, 0) # Size: 84, 84, 3
-    image = image[np.newaxis]
+    # image = image.transpose(1, 2, 0) # Size: 84, 84, 3
+    image = np.array(image)[np.newaxis]
     return image
 
 
@@ -40,6 +41,8 @@ def get_transform_images(df, path, base_folder):
 def main():
     load_path = '/local_storage/datasets/celeba/celeba'
     save_path = 'datasets/celeba/'
+    # load_path = '../datasets/celeba/celeba/'
+    # save_path = load_path
     attribute_filename = 'list_attr_celeba.txt'
     base_folder = 'img_align_celeba/'
     attr = pd.read_csv(os.path.join(load_path, attribute_filename), delim_whitespace=True, header=1)
@@ -49,17 +52,18 @@ def main():
     n_validation_imgs = 19867
     n_test_imgs = 19962
 
-    train_attr_names = ['Oval_Face', 'Attractive', 'Mustache', 'Male', 'Pointy_Nose', 'Bushy_Eyebrows', 
-                        'Blond_Hair', 'Rosy_Cheeks', 'Receding_Hairline', 'Eyeglasses', 'Goatee', 'Brown_Hair', 
-                        'Narrow_Eyes', 'Chubby', 'Big_Lips', 'Wavy_Hair', 'Bags_Under_Eyes', 'Arched_Eyebrows',
-                        'Wearing_Earrings', 'High_Cheekbones', 'Black_Hair', 'Bangs', 'Wearing_Lipstick', 'Sideburns', 'Bald']
+    # train_attr_names = ['Oval_Face', 'Attractive', 'Mustache', 'Male', 'Pointy_Nose', 'Bushy_Eyebrows', 
+    #                     'Blond_Hair', 'Rosy_Cheeks', 'Receding_Hairline', 'Eyeglasses', 'Goatee', 'Brown_Hair', 
+    #                     'Narrow_Eyes', 'Chubby', 'Big_Lips', 'Wavy_Hair', 'Bags_Under_Eyes', 'Arched_Eyebrows',
+    #                     'Wearing_Earrings', 'High_Cheekbones', 'Black_Hair', 'Bangs', 'Wearing_Lipstick', 'Sideburns', 'Bald']
     validation_attr_names = ['Wearing_Necklace', 'Smiling', 'Pale_Skin', 'Wearing_Necktie', 'Big_Nose']
-    test_attr_names = ['Straight_Hair', '5_o_Clock_Shadow', 'Wearing_Hat', 'Gray_Hair', 'Heavy_Makeup', 
-                    'Young', 'Blurry', 'Double_Chin', 'Mouth_Slightly_Open', 'No_Beard']
+    # test_attr_names = ['Straight_Hair', '5_o_Clock_Shadow', 'Wearing_Hat', 'Gray_Hair', 'Heavy_Makeup', 
+    #                 'Young', 'Blurry', 'Double_Chin', 'Mouth_Slightly_Open', 'No_Beard']
 
-    train_attr_idx = [list(attr).index(a) for a in train_attr_names]
     validation_attr_idx = [list(attr).index(a) for a in validation_attr_names]
-    test_attr_idx = [list(attr).index(a) for a in test_attr_names]
+    test_attr_idx = [15, 23, 35, 17, 21, 22, 0, 14, 18, 39] #[list(attr).index(a) for a in test_attr_names]
+    used_idx = np.concatenate([validation_attr_idx, test_attr_idx])
+    train_attr_idx = np.setdiff1d(np.arange(len(list(attr))), used_idx)
 
     train_attr_pd = attr[:n_train_imgs]
     train_attr_pd['id'] = train_attr_pd.reset_index().index
