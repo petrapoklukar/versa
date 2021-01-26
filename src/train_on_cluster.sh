@@ -4,8 +4,8 @@ SOURCE_PATH="${HOME}/Workspace/versa/src/"
 AT="@"
 
 # Test the job before actually submitting
-SBATCH_OR_CAT=cat
-# SBATCH_OR_CAT=sbatch
+# SBATCH_OR_CAT=cat
+SBATCH_OR_CAT=sbatch
 
 RUNS_PATH="${SOURCE_PATH}/slurm_logs/"
 echo $RUNS_PATH
@@ -30,7 +30,7 @@ nvidia-smi
 
 python3 run_classifier.py --mode "train_test" --dataset "celebA" \
                           --d_theta 64 \
-                          --way -2 -shot 5 --test_shot 5 --test_way 2 \
+                          --way -2 -s-hot 5 --test_shot 5 --test_way 2 \
                           --tasks_per_batch 6 --samples 10 \
                           --learning_rate 1e-4 --iterations 10000 \
                           --dropout 0.9 \
