@@ -30,9 +30,8 @@ nvidia-smi
 
 python3 run_classifier.py --mode "train_test" --dataset "celebA" \
                           --d_theta 64 \
-                          --ways -2 -shot 5 --test_shot 5 --test_way 2 \
+                          --way -2 -shot 5 --test_shot 5 --test_way 2 \
                           --tasks_per_batch 6 --samples 10 \
-                          --path_to_dataset "/local_storage/celebA" \
                           --learning_rate 1e-4 --iterations 10000 \
                           --dropout 0.9 \
                           --checkpoint_dir "models/way2shot5" \
