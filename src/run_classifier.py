@@ -50,7 +50,7 @@ parse_command_line: command line parser
 
 def parse_command_line():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--dataset", "-d", choices=["Omniglot", "miniImageNet"],
+    parser.add_argument("--dataset", "-d", choices=["Omniglot", "miniImageNet", "celebA"],
                         default="Omniglot", help="Dataset to use")
     parser.add_argument("--mode", choices=["train", "test", "train_test"], default="train_test",
                         help="Whether to run traing only, testing only, or both training and testing.")
