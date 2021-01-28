@@ -38,11 +38,12 @@ from __future__ import print_function
 import numpy as np
 import tensorflow as tf
 import argparse
+import celeba_test_utils
 from features import extract_features_omniglot, extract_features_mini_imagenet, extract_features_celeba
 from inference import infer_classifier
 from utilities import sample_normal, multinoulli_log_density, print_and_log, get_log_files
 from data import get_data
-
+from itertools import cycle
 """
 parse_command_line: command line parser
 """
@@ -50,53 +51,53 @@ parse_command_line: command line parser
 
 def parse_command_line():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--dataset", "-d", choices=["Omniglot", "miniImageNet", "celebA"],
-                        default="Omniglot", help="Dataset to use")
-    parser.add_argument("--mode", choices=["train", "test", "train_test"], default="train_test",
-                        help="Whether to run traing only, testing only, or both training and testing.")
-    parser.add_argument("--d_theta", type=int, default=256,
-                        help="Size of the feature extractor output.")
-    parser.add_argument("--shot", type=int, default=5,
-                        help="Number of training examples.")
-    parser.add_argument("--way", type=int, default=5,
-                        help="Number of classes.")
-    parser.add_argument("--test_shot", type=int, default=None,
-                        help="Shot to be used at evaluation time. If not specified 'shot' will be used.")
-    parser.add_argument("--test_way", type=int, default=None,
-                        help="Way to be used at evaluation time. If not specified 'way' will be used.")
-    parser.add_argument("--tasks_per_batch", type=int, default=16,
-                        help="Number of tasks per batch.")
-    parser.add_argument("--samples", type=int, default=10,
-                        help="Number of samples from q.")
-    parser.add_argument("--learning_rate", "-lr", type=float, default=1e-4,
-                        help="Learning rate.")
-    parser.add_argument("--iterations", type=int, default=80000,
-                        help="Number of training iterations.")
-    parser.add_argument("--checkpoint_dir", "-c", default='./checkpoint',
-                        help="Directory to save trained models.")
-    parser.add_argument("--dropout", type=float, default=0.9,
-                        help="Dropout keep probability.")
-    parser.add_argument("--test_model_path", "-m", default=None,
-                        help="Model to load and test.")
-    parser.add_argument("--print_freq", type=int, default=200, 
-                        help="Frequency of summary results (in iterations).")
+    # parser.add_argument("--dataset", "-d", choices=["Omniglot", "miniImageNet", "celebA"],
+    #                     default="Omniglot", help="Dataset to use")
+    # parser.add_argument("--mode", choices=["train", "test", "train_test"], default="train_test",
+    #                     help="Whether to run traing only, testing only, or both training and testing.")
+    # parser.add_argument("--d_theta", type=int, default=256,
+    #                     help="Size of the feature extractor output.")
+    # parser.add_argument("--shot", type=int, default=5,
+    #                     help="Number of training examples.")
+    # parser.add_argument("--way", type=int, default=5,
+    #                     help="Number of classes.")
+    # parser.add_argument("--test_shot", type=int, default=None,
+    #                     help="Shot to be used at evaluation time. If not specified 'shot' will be used.")
+    # parser.add_argument("--test_way", type=int, default=None,
+    #                     help="Way to be used at evaluation time. If not specified 'way' will be used.")
+    # parser.add_argument("--tasks_per_batch", type=int, default=16,
+    #                     help="Number of tasks per batch.")
+    # parser.add_argument("--samples", type=int, default=10,
+    #                     help="Number of samples from q.")
+    # parser.add_argument("--learning_rate", "-lr", type=float, default=1e-4,
+    #                     help="Learning rate.")
+    # parser.add_argument("--iterations", type=int, default=80000,
+    #                     help="Number of training iterations.")
+    # parser.add_argument("--checkpoint_dir", "-c", default='./checkpoint',
+    #                     help="Directory to save trained models.")
+    # parser.add_argument("--dropout", type=float, default=0.9,
+    #                     help="Dropout keep probability.")
+    # parser.add_argument("--test_model_path", "-m", default=None,
+    #                     help="Model to load and test.")
+    # parser.add_argument("--print_freq", type=int, default=200, 
+    #                     help="Frequency of summary results (in iterations).")
     args = parser.parse_args()
     
-    # args.dataset = 'celebA'
-    # args.mode = "test"
-    # args.d_theta = 64 # "Size of the feature extractor output."
-    # args.shot = 5 # "Number of training examples."
-    # args.way = 2 # "Number of classes."
-    # args.test_shot = 15 # Shot to be used at evaluation time. If not specified 'shot' will be used.")
-    # args.test_way = 2 #"Way to be used at evaluation time. If not specified 'way' will be used.")
-    # args.tasks_per_batch = 6
-    # args.samples = 10 # "Number of samples from q.")
-    # args.learning_rate = 1e-4
-    # args.iterations = 4
-    # args.checkpoint_dir = './test'
-    # args.dropout = 0.9
-    # args.test_model_path = './test'
-    # args.print_freq = 2
+    args.dataset = 'celebA'
+    args.mode = "test"
+    args.d_theta = 64 # "Size of the feature extractor output."
+    args.shot = 5 # "Number of training examples."
+    args.way = 2 # "Number of classes."
+    args.test_shot = 5 # Shot to be used at evaluation time. If not specified 'shot' will be used.")
+    args.test_way = 2 #"Way to be used at evaluation time. If not specified 'way' will be used.")
+    args.tasks_per_batch = 6
+    args.samples = 10 # "Number of samples from q.")
+    args.learning_rate = 1e-4
+    args.iterations = 10000
+    args.checkpoint_dir = './models/way2shot5'
+    args.dropout = 0.9
+    args.test_model_path = './models/way2shot5'
+    args.print_freq = 2
 
     # adjust test_shot and test_way if necessary
     if args.test_shot is None:
@@ -292,9 +293,105 @@ def main(unused_argv):
 
         if args.mode == 'test':
             test_model(args.test_model_path)
+            
+             
+        def test_celeba(model_path, load=True):
+            if load:
+                saver.restore(sess, save_path=model_path)
+            test_eval_samples = 5 # number of query points
+            MAX_TEST_TASKS = 100
 
-    logfile.close()
+            all_accuracy = []
+            all_clusters = []
+            all_log_probs = []
+            
+            data.init_testing_params(args.test_way)
 
+            # compute test accuracy
+            n_test_examples = 0
+            for i in cycle(range(data.n_test_triplets)):  # data_generator.n_test_triplets is 50 when num_support=num_query=5
+                n_test_examples += 1
+                train_inputs, test_inputs, train_outputs, test_outputs = data.get_test_triplet_batch(
+                    args.test_shot, args.test_way, test_eval_samples, i)
+                # split out batch
+                feedDict = {train_images: train_inputs, # [3, 2*5, 84, 84, 3] support inputs (three same things)
+                            test_images: test_inputs,   # [3, 2*5, 84, 84, 3] query inputs (three different things)
+                            train_labels: train_outputs, # [3, 2*5, 2] support outputs
+                            test_labels: test_outputs,   # [3, 2*5, 2] query outputs
+                            dropout_keep_prob: 1.0}
 
+                n_samples = 40
+                n_marginal = 100
+
+                counter = 0
+                cluster = []
+                all_preds = []
+
+                print("Tested on test_example {}".format(n_test_examples))
+                # FEED feedDict to the model and get the below
+                weight_mean, bias_mean = ... # corresponds to classifier['weight_mean'], classifier['bias_mean']
+                weight_log_variance, bias_log_variance = ... # corresonds to classifier['weight_log_variance'], classifier['bias_log_variance']
+                features_test = ... # features of input_test
+                while counter < n_samples:
+                    counter += 1
+                    
+                    # Convert to numpy, create normal distributions
+                    w1 = ... # sample from normal(weight_mean, exp(weight_log_variance))
+                    b1 = ... # sample from normal (bias_mean, exp(bias_log_variance))
+                    outputs = ... # matmul(w1, features_test) + b1 
+                    # cluster assignments can also be done with marginal
+                    task_probs = celeba_test_utils.np_softmax(outputs[0])
+                    _task_log_probs = np.log(task_probs[np.where(test_outputs == 1)]).reshape([3, -1])
+                    task_log_probs = np.mean(_task_log_probs, axis=-1)
+                    most_likely_idx = task_log_probs.argmax()
+                    cluster.append(most_likely_idx)
+                    all_preds.append(outputs[0][most_likely_idx].argmax(axis=-1))
+                    accuracy = celeba_test_utils.np_accuracy(outputs[0], test_outputs, average=False)
+                    all_accuracy.append(accuracy[most_likely_idx].mean())
+                    all_clusters.append(cluster)
+                    # compute marginal for that task
+
+                marginal_p = compute_marginal_batch(...)
+                all_log_probs.append(np.mean(np.log(marginal_p[np.where(labelb == 1)])))
+                # ndims = len(train_inputs.shape)
+                # n_tasks = train_inputs.shape[0]
+                # tile_shape = (n_samples,) + (ndims) * (1,)
+                # # tile and collapse
+                # train_inputs_tiled = np.reshape(
+                #     np.tile(train_inputs[None, :], tile_shape), (-1,) + train_inputs.shape[1:])
+                # test_inputs_tiled = np.reshape(
+                #     np.tile(test_inputs[None, :], tile_shape), (-1,) + test_inputs.shape[1:])
+                # train_outputs_tiled = np.reshape(
+                #     np.tile(train_outputs[None, :], tile_shape), (-1,) + train_outputs.shape[1:])
+                # test_outputs_tiled = np.reshape(
+                #     np.tile(test_outputs[None, :], tile_shape), (-1,) + test_outputs.shape[1:])
+                # feed_dict = {train_images: train_inputs_tiled,
+                #              test_images: test_inputs_tiled,
+                #             train_labels: train_outputs_tiled,
+                #             test_labels: test_outputs_tiled,
+                #             dropout_keep_prob: 1.0}
+                
+                # outputs = sess.run(input_tensors, feed_dict)
+                # probs = celeba_test_utils.np_softmax(outputs[0].reshape([-1, 2]))
+                # probs = probs.reshape((n_samples, n_tasks) + outputs[0].shape[1:])
+                # # average over samples
+                # marginal_p = probs.mean(axis=0)
+                
+
+                if n_test_examples >= MAX_TEST_TASKS:
+                    break
+
+            print("Test")
+            print("all_accuracy: {}".format(np.mean(all_accuracy)))
+            print("all_accuracy confidence: {}".format(np.std(all_accuracy) * 1.96 / np.sqrt(len(all_accuracy))))
+            coverage = [len(np.unique(cl)) for cl in all_clusters]
+            print("all_coverage: {}".format(np.mean(coverage)))
+            print("all_coverage confidence: {}".format(np.std(coverage) * 1.96 / np.sqrt(len(coverage))))
+            print("all_logprob: {}".format(np.mean(all_log_probs)))
+            print("all_logprobs confidence: {}".format(np.std(all_log_probs) * 1.96 / np.sqrt(len(all_log_probs))))    
+        
+        if args.mode == 'test_celeba':
+            test_celeba(args.test_model_path)
+            
 if __name__ == "__main__":
     tf.app.run()

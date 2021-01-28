@@ -6,6 +6,8 @@ import pandas as pd
 pd.options.mode.chained_assignment = None
 # import torchvision.transforms as transforms
 import pickle
+from collections import OrderedDict, defaultdict
+from itertools import combinations
 
 def onehottify_2d_array(a):
     """
@@ -65,7 +67,8 @@ class CelebAData(object):
             self.test_attr_df = test_dict['attr_pd'] # Already scaled to 0, 1
             self.test_attr_idx = test_dict['attr_list']
             self.test_imgs = test_dict['img_array']
-            
+        
+
 
         self.attr_names = list(self.train_attr_df.columns)
         self.num_total_attr = len(self.attr_names)
@@ -266,7 +269,130 @@ class CelebAData(object):
         for elem in attr_names:
             joined.append('+'.join(elem))
         return '/'.join(joined)
+    
+    def _not_idx(self, attr_id, labels):
+        """
+        This takes in a list of attributes, and returns a list of attributes that has neither of the them.
+        """
+        attr_boolean = np.logical_or.reduce([labels[:, attr] == 1 for attr in attr_id], axis=0)
+        attr_boolean = np.logical_not(attr_boolean)
+        attr_idx = np.where(attr_boolean)[0]
+        return attr_idx
 
+    def _has_idx(self, attr_id, labels):
+        has_all_attr = np.all([labels[:, attr] == 1 for attr in attr_id], axis=0)
+        attr_idx = np.where(has_all_attr)[0]
+        return attr_idx
+
+    def _xor_attribute(self, attr_id, labels):
+        assert len(attr_id) == 2
+        has_xor_attr = []
+        has_xor_attr.append(labels[:, attr_id[0]] == 1)
+        has_xor_attr.append(labels[:, attr_id[1]] == 0)
+        has_xor_attr = np.all(has_xor_attr, axis=0)
+        attr_idx = np.where(has_xor_attr)[0]
+
+        has_xor_attr = []
+        has_xor_attr.append(labels[:, attr_id[1]] == 1)
+        has_xor_attr.append(labels[:, attr_id[0]] == 0)
+        has_xor_attr = np.all(has_xor_attr, axis=0)
+        neg_idx = np.where(has_xor_attr)[0]
+        return attr_idx, neg_idx
+
+
+    def get_attribute_combinations(self, attributes, labels, way, orders=[2]):
+        """
+        attributes: list
+        order : the k in the n choose k sense
+        """
+        attr_combinations = OrderedDict()
+        ambig_attr_combinations = OrderedDict()
+        for order in orders:
+            for attr_id in combinations(attributes, order):
+                # sample classes with both attributes and none
+                attr_idx = self._has_idx(attr_id, labels)
+                # sample the not class
+                ambig_attr_idx = self._not_idx(attr_id, labels)
+                # check there are are enough examples
+                if order == 3:
+                    # one set for adaptation and three for evaluation
+                    min_examples = 3 * way
+                else:
+                    min_examples = 2 * way
+
+                if len(attr_idx) >= min_examples and len(ambig_attr_idx) >= min_examples:
+                    attr_combinations[attr_id] = attr_idx
+                    ambig_attr_combinations[attr_id] = ambig_attr_idx
+                
+                # higher order xor is also possible not but not the goal of the evaluation              
+                if order == 2:
+                    # sample attributes that have only one of the attribute
+                    attr_idx, neg_idx = self._xor_attribute(attr_id, labels)
+                    if len(attr_idx) >= 2 * way and len(neg_idx) >= 2 * way:
+                        attr_combinations[attr_id + ('xor',)] = attr_idx
+                        ambig_attr_combinations[attr_id + ('xor',)] = neg_idx
+
+        return attr_combinations, ambig_attr_combinations
+
+    def init_testing_params(self, way):
+        # Used for testing
+        self.metatest_attr_doubles, self.metatest_attr_ambig = self.get_attribute_combinations(
+            self.test_attr_idx, np.array(self.test_attr_df), way)
+        
+        self.metatest_attr_triplet, self.meta_attr_triplet_neg = self.get_attribute_combinations(
+            self.test_attr_idx, np.array(self.test_attr_df), way, orders=[3])
+        self.n_test_triplets = len(self.metatest_attr_triplet)
+        
+
+    def get_test_triplet_batch(self, shot, way, eval_samples, input_idx):
+        """
+        Generate a tasks which contains dataset containing three test attributes
+        """
+        tasks_per_batch = 3
+        # attr_names = []
+        inputa = np.zeros((tasks_per_batch, way * shot, self.image_height, self.image_width, self.image_channels),
+                    dtype=np.float32)
+        labela = np.zeros((tasks_per_batch, way * shot), dtype=np.int32)
+        
+        triplet_key = list(self.metatest_attr_triplet.keys())[input_idx]
+        # attr_names.append(" ".join(map(self.id_to_name_fn, triplet_key)))
+        attr_idx_3 = self.metatest_attr_triplet[triplet_key] # idx having these attributes
+        negative_attr_idx_3 = self.meta_attr_triplet_neg[triplet_key] # idx not having these attributes 
+        
+        amb_idx = []
+        for i, idx in enumerate([attr_idx_3, negative_attr_idx_3]):
+            sampled_idx = np.random.choice(idx, size=shot, replace=False)
+            sampled_data = self.test_imgs[sampled_idx][np.newaxis] # 1, shot, H, W, C
+            amb_idx.append(sampled_idx)
+            inputa[:, i::way] = sampled_data.astype('float32') / 255.
+            labela[:, i::way] = 1.
+            
+        # d val
+        inputb = np.zeros((tasks_per_batch, way * eval_samples, self.image_height, self.image_width, self.image_channels),
+                    dtype=np.float32)
+        labelb = np.zeros((tasks_per_batch, way * eval_samples), dtype=np.int32)
+        # Get all possible combinations of 2 attributes out of 3
+        for t, sub_combs in enumerate(combinations(triplet_key, 2)):
+            # attr_names.append(" ".join(map(self.id_to_name_fn, sub_combs)))
+            pos_attr_idx = self.metatest_attr_doubles[sub_combs]
+            negative_attr_idx = self.metatest_attr_ambig[sub_combs]
+            # remove any examples that were sampled above
+            pos_attr_idx = np.setdiff1d(pos_attr_idx, amb_idx[0]) 
+            negative_attr_idx = np.setdiff1d(negative_attr_idx, amb_idx[1]) 
+            for i, idx in enumerate([pos_attr_idx, negative_attr_idx]):
+                sampled_idx_query = np.random.choice(idx, size=eval_samples, replace=False)
+                sampled_data = self.test_imgs[sampled_idx_query][np.newaxis] # 1, shot, H, W, C   
+                inputb[t, i::way] = sampled_data.reshape([5, -1]).astype('float32') / 255.
+                labelb[t, i::way] = 1.
+        
+        # labels to one-hot encoding
+        labela = onehottify_2d_array(labela)
+        labelb = onehottify_2d_array(labelb)
+        # return [xs, xq, ys, yq]
+        return [inputa, inputb, labela, labelb]
+
+dataset = CelebAData(123)
+print('done')
 
 def test():
     dataset = CelebAData(123)
