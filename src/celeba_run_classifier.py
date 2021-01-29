@@ -336,12 +336,12 @@ def main(unused_argv):
             n_test_examples = 0
             for i in cycle(range(data.n_test_triplets)):
                 n_test_examples += 1
-                # train_inputs, test_inputs, train_outputs, test_outputs = data.get_test_triplet_batch_new(
-                #     args.test_shot, args.test_way, test_eval_samples, i)
+                train_inputs, test_inputs, train_outputs, test_outputs = data.get_test_triplet_batch_new(
+                    args.test_shot, args.test_way, test_eval_samples, i)
                 
-                train_inputs, test_inputs, train_outputs, test_outputs = data.get_batch(
-                    'test', test_args_per_batch, args.test_shot, args.test_way,
-                                   eval_samples_test)
+                # train_inputs, test_inputs, train_outputs, test_outputs = data.get_batch(
+                #     'test', test_args_per_batch, args.test_shot, args.test_way,
+                #                    eval_samples_test)
                 
                 print(train_inputs.shape, test_inputs.shape, train_outputs.shape, test_outputs.shape)
                 # split out batch                
@@ -352,10 +352,10 @@ def main(unused_argv):
                             dropout_keep_prob: 1.0}
 
                 ft, wm, bm, wlv, blv = sess.run(output_tensors, feedDict)
-                print(wm.shape, wlv.shape)
-                print(bm.shape, blv.shape)
-                print(ft.shape)
-                logits_mean_test = tf.matmul(ft, wm) + bm
+                print(wm.shape, wlv.shape) # (3, 64, 2)
+                print(bm.shape, blv.shape) # (3, 2)
+                print(ft.shape) # (3, 10, 64)
+                logits_mean_test = tf.matmul(ft, wm) + bm # (3, 10, 64) * (3, 64, 2)
                 logits_log_var_test = tf.log(tf.matmul(ft ** 2, tf.exp(wlv)) + tf.exp(blv))
                 logits_sample_test = sample_normal(logits_mean_test, logits_log_var_test, 11)
                 print('TEST: ', logits_mean_test.shape, logits_log_var_test.shape, logits_sample_test.shape)
@@ -375,7 +375,7 @@ def main(unused_argv):
                     # TODO: are w and b correct?
                     w = wm + np.random.normal(loc=0.0, scale=1.0, size=1) * np.sqrt(np.exp(wlv))  # sample from normal(weight_mean, exp(weight_log_variance))
                     b = bm + np.random.normal(loc=0.0, scale=1.0, size=1) * np.sqrt(np.exp(blv))  # sample from normal (bias_mean, exp(bias_log_variance))
-                    outputs = np.matmul(ft, w) + b
+                    outputs = np.matmul(ft, w) + b.reshape(3, 1, 2)
                     # cluster assignments can also be done with marginal
                     task_probs = celeba_test_utils.np_softmax(outputs[0])
                     _task_log_probs = np.log(task_probs[np.where(test_outputs == 1)]).reshape([3, -1])
