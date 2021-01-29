@@ -382,7 +382,7 @@ class CelebAData(object):
             for i, idx in enumerate([pos_attr_idx, negative_attr_idx]):
                 sampled_idx_query = np.random.choice(idx, size=eval_samples, replace=False)
                 sampled_data = self.test_imgs[sampled_idx_query][np.newaxis] # 1, shot, H, W, C   
-                inputb[t, i::way] = sampled_data.reshape([5, -1]).astype('float32') / 255.
+                inputb[t, i::way] = sampled_data.astype('float32') / 255.
                 labelb[t, i::way] = 1.
         
         # labels to one-hot encoding
