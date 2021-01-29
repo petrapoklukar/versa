@@ -336,7 +336,7 @@ def main(unused_argv):
             n_test_examples = 0
             for i in cycle(range(data.n_test_triplets)):
                 n_test_examples += 1
-                train_inputs, test_inputs, train_outputs, test_outputs = data.get_test_triplet_batch(
+                train_inputs, test_inputs, train_outputs, test_outputs = data.get_test_triplet_batch_new(
                     args.test_shot, args.test_way, test_eval_samples, i)
                 print(train_inputs.shape, test_inputs.shape, train_outputs.shape, test_outputs.shape)
                 # split out batch                
@@ -347,8 +347,8 @@ def main(unused_argv):
                             dropout_keep_prob: 1.0}
 
                 ft, wm, bm, wlv, blv = sess.run(output_tensors, feedDict)
-                print(wm.shape, wlv.shape, w.shape)
-                print(bm.shape, blv.shape, b.shape)
+                print(wm.shape, wlv.shape)
+                print(bm.shape, blv.shape)
                 print(ft.shape)
                 logits_mean_test = tf.matmul(ft, wm) + bm
                 logits_log_var_test = tf.log(tf.matmul(ft ** 2, tf.exp(wlv)) + tf.exp(blv))

@@ -344,6 +344,71 @@ class CelebAData(object):
         self.n_test_triplets = len(self.metatest_attr_triplet)
         
 
+    def get_test_triplet_batch_new(self, shot, way, eval_samples, input_idx):
+        """
+        Generate a tasks which contains dataset containing three test attributes
+        """
+        tasks_per_batch = 3
+        # attr_names = []
+        xs = np.zeros((tasks_per_batch, way * shot, self.image_height, self.image_width, self.image_channels),
+                      dtype=np.float32)
+        ys = np.zeros((tasks_per_batch, way * shot), dtype=np.int32)
+        xq = np.zeros((tasks_per_batch, way * eval_samples, self.image_height, self.image_width, self.image_channels),
+                      dtype=np.float32)
+        yq = np.zeros((tasks_per_batch, way * eval_samples), dtype=np.int32)
+        
+        triplet_key = list(self.metatest_attr_triplet.keys())[input_idx]
+        # attr_names.append(" ".join(map(self.id_to_name_fn, triplet_key)))
+        attr_idx_3 = self.metatest_attr_triplet[triplet_key] # idx having these attributes
+        negative_attr_idx_3 = self.meta_attr_triplet_neg[triplet_key] # idx not having these attributes 
+        
+        amb_idx = []
+        # Support set gets 3 attributes - amiguous setting 
+        positive_idx = np.random.choice(attr_idx_3, size=shot, replace=False)
+        positive_images = self.test_imgs[positive_idx].astype('float32') / 255. # shot, H, W, C 
+        amb_idx.append(positive_idx)
+        
+        negative_idx = np.random.choice(negative_attr_idx_3, size=shot, replace=False)
+        negative_images = self.test_imgs[negative_idx].astype('float32') / 255. # shot, H, W, C 
+        amb_idx.append(negative_idx)
+        assert(positive_images.shape == negative_images.shape)
+        
+        support_imgs = np.concatenate([positive_images, negative_images])
+        support_labels = np.concatenate([np.repeat(1, shot), np.repeat(0, shot)])
+        
+        for i in range(tasks_per_batch):
+            support_permutation = np.arange(shot * way) # Permute positive and negative samples
+            np.random.shuffle(support_permutation)
+            xs[i], ys[i] = support_imgs[support_permutation], support_labels[support_permutation]
+            
+        # Get all possible combinations of 2 attributes out of 3
+        for t, sub_combs in enumerate(combinations(triplet_key, 2)):
+            pos_attr_idx = self.metatest_attr_doubles[sub_combs]
+            negative_attr_idx = self.metatest_attr_ambig[sub_combs]
+            # remove any examples that were sampled above
+            pos_attr_idx = np.setdiff1d(pos_attr_idx, amb_idx[0]) 
+            negative_attr_idx = np.setdiff1d(negative_attr_idx, amb_idx[1]) 
+            
+            positive_idx_query = np.random.choice(pos_attr_idx, size=eval_samples, replace=False)
+            positive_images = self.test_imgs[positive_idx_query].astype('float32') / 255.
+            
+            negative_idx_query = np.random.choice(negative_attr_idx, size=eval_samples, replace=False)
+            negative_images = self.test_imgs[negative_idx_query].astype('float32') / 255.
+            assert(positive_images.shape == negative_images.shape)
+            
+            query_imgs = np.concatenate([positive_images, negative_images])
+            query_labels = np.concatenate([np.repeat(1, eval_samples), np.repeat(0, eval_samples)])
+            query_permutation = np.arange(eval_samples * way) # Permute positive and negative samples
+            np.random.shuffle(query_permutation)
+        
+            xq[t], yq[t] = query_imgs[query_permutation], query_labels[query_permutation]
+        
+        
+        # labels to one-hot encoding
+        ys = onehottify_2d_array(ys)
+        yq = onehottify_2d_array(yq)
+        return [xs, xq, ys, yq]
+    
     def get_test_triplet_batch(self, shot, way, eval_samples, input_idx):
         """
         Generate a tasks which contains dataset containing three test attributes
@@ -358,7 +423,6 @@ class CelebAData(object):
         # attr_names.append(" ".join(map(self.id_to_name_fn, triplet_key)))
         attr_idx_3 = self.metatest_attr_triplet[triplet_key] # idx having these attributes
         negative_attr_idx_3 = self.meta_attr_triplet_neg[triplet_key] # idx not having these attributes 
-        
         amb_idx = []
         for i, idx in enumerate([attr_idx_3, negative_attr_idx_3]):
             sampled_idx = np.random.choice(idx, size=shot, replace=False)
@@ -366,6 +430,9 @@ class CelebAData(object):
             amb_idx.append(sampled_idx)
             inputa[:, i::way] = sampled_data.astype('float32') / 255.
             labela[:, i::way, i] = 1.
+        # support_permutation = np.arange(shot * way) # Permute positive and negative samples
+        # np.random.shuffle(support_permutation)
+        # xs[i], ys[i] = support_imgs[support_permutation], support_labels[support_permutation]
             
         # d val
         inputb = np.zeros((tasks_per_batch, way * eval_samples, self.image_height, self.image_width, self.image_channels),
@@ -392,11 +459,12 @@ class CelebAData(object):
         return [inputa, inputb, labela, labelb]
 
 
+dataset = CelebAData(123)
+dataset.init_testing_params(2)
+dataset.get_test_triplet_batch_new(5, 2, 7, 0)
+r = dataset._sample_batch('test', 3, 5, 2, 7)
 
 def test():
-    dataset = CelebAData(123)
-    dataset.init_testing_params(2)
-    dataset.get_test_triplet_batch(5, 2, 7, 0)
     print('done')
     dataset = CelebAData(123)
     dataset.get_batch('train', 10, 4, 2, 7)
