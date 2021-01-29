@@ -336,8 +336,13 @@ def main(unused_argv):
             n_test_examples = 0
             for i in cycle(range(data.n_test_triplets)):
                 n_test_examples += 1
-                train_inputs, test_inputs, train_outputs, test_outputs = data.get_test_triplet_batch_new(
-                    args.test_shot, args.test_way, test_eval_samples, i)
+                # train_inputs, test_inputs, train_outputs, test_outputs = data.get_test_triplet_batch_new(
+                #     args.test_shot, args.test_way, test_eval_samples, i)
+                
+                train_inputs, test_inputs, train_outputs, test_outputs = data.get_batch(
+                    'test', test_args_per_batch, args.test_shot, args.test_way,
+                                   eval_samples_test)
+                
                 print(train_inputs.shape, test_inputs.shape, train_outputs.shape, test_outputs.shape)
                 # split out batch                
                 feedDict = {train_images: train_inputs,  # [3, 2*5, 84, 84, 3] support inputs (three same things)
