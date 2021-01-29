@@ -372,13 +372,14 @@ def main(unused_argv):
                     # TODO: are w and b correct?
                     w = wm + np.random.normal(loc=0.0, scale=1.0, size=1) * np.sqrt(np.exp(wlv))  # sample from normal(weight_mean, exp(weight_log_variance))
                     b = bm + np.random.normal(loc=0.0, scale=1.0, size=1) * np.sqrt(np.exp(blv))  # sample from normal (bias_mean, exp(bias_log_variance))
-                    print(b.reshape(3, 1, 2), np.matmul(ft, w))
                     outputs = np.matmul(ft, w) + b.reshape(3, 1, 2)
                     print(wm.shape, wlv.shape) # (3, 64, 2)
                     print(bm.shape, blv.shape) # (3, 2)
                     print(ft.shape) # (3, 10, 64)
+                    print(b.reshape(3, 1, 2).shape, np.matmul(ft, w).shape, outputs.shape )
                     # cluster assignments can also be done with marginal
                     task_probs = celeba_test_utils.np_softmax(outputs[0])
+                    print(task_probs.shape, test_outputs.shape)
                     _task_log_probs = np.log(task_probs[np.where(test_outputs == 1)]).reshape([3, -1])
                     task_log_probs = np.mean(_task_log_probs, axis=-1)
                     most_likely_idx = task_log_probs.argmax()
