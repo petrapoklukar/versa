@@ -338,6 +338,7 @@ def main(unused_argv):
                 n_test_examples += 1
                 train_inputs, test_inputs, train_outputs, test_outputs = data.get_test_triplet_batch(
                     args.test_shot, args.test_way, test_eval_samples, i)
+                print(train_inputs.shape, test_inputs.shape, train_outputs.shape, test_outputs.shape)
                 # split out batch
                 feedDict = {train_images: train_inputs,  # [3, 2*5, 84, 84, 3] support inputs (three same things)
                             test_images: test_inputs,  # [3, 2*5, 84, 84, 3] query inputs (three different things)
