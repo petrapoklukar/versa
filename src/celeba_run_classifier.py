@@ -339,7 +339,7 @@ def main(unused_argv):
                 train_inputs, test_inputs, train_outputs, test_outputs = data.get_test_triplet_batch(
                     args.test_shot, args.test_way, test_eval_samples, i)
                 print(train_inputs.shape, test_inputs.shape, train_outputs.shape, test_outputs.shape)
-                # split out batch
+                # split out batch                
                 feedDict = {train_images: train_inputs,  # [3, 2*5, 84, 84, 3] support inputs (three same things)
                             test_images: test_inputs,  # [3, 2*5, 84, 84, 3] query inputs (three different things)
                             train_labels: train_outputs,  # [3, 2*5, 2] support outputs
@@ -347,7 +347,11 @@ def main(unused_argv):
                             dropout_keep_prob: 1.0}
 
                 ft, wm, bm, wlv, blv = sess.run(output_tensors, feedDict)
-
+                logits_mean_test = tf.matmul(ft, wm) + bm
+                logits_log_var_test = tf.log(tf.matmul(ft ** 2, tf.exp(wlv)) + tf.exp(blv))
+                logits_sample_test = sample_normal(logits_mean_test, logits_log_var_test, 11)
+                print('TEST: ', logits_mean_test.shape, logits_log_var_test.shape, logits_sample_test.shape)
+        
                 n_samples = 40
                 n_marginal = 100
 

@@ -352,7 +352,7 @@ class CelebAData(object):
         # attr_names = []
         inputa = np.zeros((tasks_per_batch, way * shot, self.image_height, self.image_width, self.image_channels),
                     dtype=np.float32)
-        labela = np.zeros((tasks_per_batch, way * shot), dtype=np.int32)
+        labela = np.zeros((tasks_per_batch, way * shot, way), dtype=np.int32)
         
         triplet_key = list(self.metatest_attr_triplet.keys())[input_idx]
         # attr_names.append(" ".join(map(self.id_to_name_fn, triplet_key)))
@@ -365,12 +365,12 @@ class CelebAData(object):
             sampled_data = self.test_imgs[sampled_idx][np.newaxis] # 1, shot, H, W, C
             amb_idx.append(sampled_idx)
             inputa[:, i::way] = sampled_data.astype('float32') / 255.
-            labela[:, i::way] = 1.
+            labela[:, i::way, i] = 1.
             
         # d val
         inputb = np.zeros((tasks_per_batch, way * eval_samples, self.image_height, self.image_width, self.image_channels),
                     dtype=np.float32)
-        labelb = np.zeros((tasks_per_batch, way * eval_samples), dtype=np.int32)
+        labelb = np.zeros((tasks_per_batch, way * eval_samples, way), dtype=np.int32)
         # Get all possible combinations of 2 attributes out of 3
         for t, sub_combs in enumerate(combinations(triplet_key, 2)):
             # attr_names.append(" ".join(map(self.id_to_name_fn, sub_combs)))
@@ -383,17 +383,20 @@ class CelebAData(object):
                 sampled_idx_query = np.random.choice(idx, size=eval_samples, replace=False)
                 sampled_data = self.test_imgs[sampled_idx_query][np.newaxis] # 1, shot, H, W, C   
                 inputb[t, i::way] = sampled_data.astype('float32') / 255.
-                labelb[t, i::way] = 1.
+                labelb[t, i::way, i] = 1.
         
         # labels to one-hot encoding
-        labela = onehottify_2d_array(labela)
-        labelb = onehottify_2d_array(labelb)
+        # labela = onehottify_2d_array(labela)
+        # labelb = onehottify_2d_array(labelb)
         # return [xs, xq, ys, yq]
         return [inputa, inputb, labela, labelb]
 
-dataset = CelebAData(123)
-print('done')
+
 
 def test():
+    dataset = CelebAData(123)
+    dataset.init_testing_params(2)
+    dataset.get_test_triplet_batch(5, 2, 7, 0)
+    print('done')
     dataset = CelebAData(123)
     dataset.get_batch('train', 10, 4, 2, 7)
