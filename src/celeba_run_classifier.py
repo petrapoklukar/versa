@@ -425,8 +425,8 @@ def main(unused_argv):
                     return marginal_probs, preds
 
                 # TODO: call celeba_test_utils.compute_marginal_batch
-                marginal_p, _ = compute_marginal_batch(sess, output_tensors, n_marginal, train_inputs, train_outputs, test_inputs, test_outputs)
-                all_log_probs.append(np.mean(np.log(marginal_p[np.where(test_outputs == 1)])))
+                # marginal_p, _ = compute_marginal_batch(sess, output_tensors, n_marginal, train_inputs, train_outputs, test_inputs, test_outputs)
+                # all_log_probs.append(np.mean(np.log(marginal_p[np.where(test_outputs == 1)])))
                 if n_test_examples >= MAX_TEST_TASKS:
                     break
 
@@ -436,8 +436,8 @@ def main(unused_argv):
             coverage = [len(np.unique(cl)) for cl in all_clusters]
             print("all_coverage: {}".format(np.mean(coverage)))
             print("all_coverage confidence: {}".format(np.std(coverage) * 1.96 / np.sqrt(len(coverage))))
-            print("all_logprob: {}".format(np.mean(all_log_probs)))
-            print("all_logprobs confidence: {}".format(np.std(all_log_probs) * 1.96 / np.sqrt(len(all_log_probs))))
+            # print("all_logprob: {}".format(np.mean(all_log_probs)))
+            # print("all_logprobs confidence: {}".format(np.std(all_log_probs) * 1.96 / np.sqrt(len(all_log_probs))))
 
         if args.mode == 'test_celeba':
             test_celeba(args.test_model_path)
