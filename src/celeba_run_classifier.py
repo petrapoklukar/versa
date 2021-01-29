@@ -347,6 +347,9 @@ def main(unused_argv):
                             dropout_keep_prob: 1.0}
 
                 ft, wm, bm, wlv, blv = sess.run(output_tensors, feedDict)
+                print(wm.shape, wlv.shape, w.shape)
+                print(bm.shape, blv.shape, b.shape)
+                print(ft.shape)
                 logits_mean_test = tf.matmul(ft, wm) + bm
                 logits_log_var_test = tf.log(tf.matmul(ft ** 2, tf.exp(wlv)) + tf.exp(blv))
                 logits_sample_test = sample_normal(logits_mean_test, logits_log_var_test, 11)
@@ -367,9 +370,6 @@ def main(unused_argv):
                     # TODO: are w and b correct?
                     w = wm + np.random.normal(loc=0.0, scale=1.0, size=1) * np.sqrt(np.exp(wlv))  # sample from normal(weight_mean, exp(weight_log_variance))
                     b = bm + np.random.normal(loc=0.0, scale=1.0, size=1) * np.sqrt(np.exp(blv))  # sample from normal (bias_mean, exp(bias_log_variance))
-                    print(wm.shape, wlv.shape, w.shape)
-                    print(bm.shape, blv.shape, b.shape)
-                    print(ft.shape)
                     outputs = np.matmul(ft, w) + b
                     # cluster assignments can also be done with marginal
                     task_probs = celeba_test_utils.np_softmax(outputs[0])
