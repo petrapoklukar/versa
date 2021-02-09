@@ -11,6 +11,8 @@ RUNS_PATH="${SOURCE_PATH}/slurm_logs/"
 echo $RUNS_PATH
 mkdir -p $RUNS_PATH
 
+for way in 5 20; do
+for shot in 1 5; do 
 
 "${SBATCH_OR_CAT}" << HERE
 #!/usr/bin/env bash
@@ -28,16 +30,26 @@ echo "Activating conda environment"
 conda activate base
 nvidia-smi
 
-python3 run_classifier.py --mode "train_test" --dataset "celebA" \
+python3 run_classifier.py --mode "train_test" --dataset "Omniglot" \
                           --d_theta 64 \
-                          --way 2 --shot 5 --test_shot 5 --test_way 2 \
-                          --tasks_per_batch 6 --samples 10 \
+                          --way ${way} --shot ${shot} \
+                          --tasks_per_batch 24 --samples 10 \
                           --learning_rate 1e-4 --iterations 10000 \
                           --dropout 0.9 \
-                          --checkpoint_dir "models/way2shot5" \
+                          --checkpoint_dir "models/omniglot_way${way}shot${shot}" \
                           --print_freq 1000
                           
 
 HERE
+done 
+done
 
-# python3 run_classifier.py --mode "train_test" --dataset "celebA" --d_theta 64 --way -2 --shot 5 --tasks_per_batch 6 --samples 10 --learning_rate 1e-4 --iterations 10 --dropout 0.9 --checkpoint_dir "models/way2shot5" --print_freq 1
+# RUNS on CELEBA
+# python3 run_classifier.py --mode "train_test" --dataset "celebA" \
+#                           --d_theta 64 \
+#                           --way 2 --shot 5 --test_shot 5 --test_way 2 \
+#                           --tasks_per_batch 6 --samples 10 \
+#                           --learning_rate 1e-4 --iterations 10000 \
+#                           --dropout 0.9 \
+#                           --checkpoint_dir "models/way2shot5" \
+#                           --print_freq 1000

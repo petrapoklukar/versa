@@ -51,53 +51,53 @@ parse_command_line: command line parser
 
 def parse_command_line():
     parser = argparse.ArgumentParser()
-    # parser.add_argument("--dataset", "-d", choices=["Omniglot", "miniImageNet", "celebA"],
-    #                     default="Omniglot", help="Dataset to use")
-    # parser.add_argument("--mode", choices=["train", "test", "train_test"], default="train_test",
-    #                     help="Whether to run traing only, testing only, or both training and testing.")
-    # parser.add_argument("--d_theta", type=int, default=256,
-    #                     help="Size of the feature extractor output.")
-    # parser.add_argument("--shot", type=int, default=5,
-    #                     help="Number of training examples.")
-    # parser.add_argument("--way", type=int, default=5,
-    #                     help="Number of classes.")
-    # parser.add_argument("--test_shot", type=int, default=None,
-    #                     help="Shot to be used at evaluation time. If not specified 'shot' will be used.")
-    # parser.add_argument("--test_way", type=int, default=None,
-    #                     help="Way to be used at evaluation time. If not specified 'way' will be used.")
-    # parser.add_argument("--tasks_per_batch", type=int, default=16,
-    #                     help="Number of tasks per batch.")
-    # parser.add_argument("--samples", type=int, default=10,
-    #                     help="Number of samples from q.")
-    # parser.add_argument("--learning_rate", "-lr", type=float, default=1e-4,
-    #                     help="Learning rate.")
-    # parser.add_argument("--iterations", type=int, default=80000,
-    #                     help="Number of training iterations.")
-    # parser.add_argument("--checkpoint_dir", "-c", default='./checkpoint',
-    #                     help="Directory to save trained models.")
-    # parser.add_argument("--dropout", type=float, default=0.9,
-    #                     help="Dropout keep probability.")
-    # parser.add_argument("--test_model_path", "-m", default=None,
-    #                     help="Model to load and test.")
-    # parser.add_argument("--print_freq", type=int, default=200, 
-    #                     help="Frequency of summary results (in iterations).")
+    parser.add_argument("--dataset", "-d", choices=["Omniglot", "miniImageNet", "celebA"],
+                        default="Omniglot", help="Dataset to use")
+    parser.add_argument("--mode", choices=["train", "test", "train_test"], default="train_test",
+                        help="Whether to run traing only, testing only, or both training and testing.")
+    parser.add_argument("--d_theta", type=int, default=256,
+                        help="Size of the feature extractor output.")
+    parser.add_argument("--shot", type=int, default=5,
+                        help="Number of training examples.")
+    parser.add_argument("--way", type=int, default=5,
+                        help="Number of classes.")
+    parser.add_argument("--test_shot", type=int, default=None,
+                        help="Shot to be used at evaluation time. If not specified 'shot' will be used.")
+    parser.add_argument("--test_way", type=int, default=None,
+                        help="Way to be used at evaluation time. If not specified 'way' will be used.")
+    parser.add_argument("--tasks_per_batch", type=int, default=16,
+                        help="Number of tasks per batch.")
+    parser.add_argument("--samples", type=int, default=10,
+                        help="Number of samples from q.")
+    parser.add_argument("--learning_rate", "-lr", type=float, default=1e-4,
+                        help="Learning rate.")
+    parser.add_argument("--iterations", type=int, default=80000,
+                        help="Number of training iterations.")
+    parser.add_argument("--checkpoint_dir", "-c", default='./checkpoint',
+                        help="Directory to save trained models.")
+    parser.add_argument("--dropout", type=float, default=0.9,
+                        help="Dropout keep probability.")
+    parser.add_argument("--test_model_path", "-m", default=None,
+                        help="Model to load and test.")
+    parser.add_argument("--print_freq", type=int, default=200, 
+                        help="Frequency of summary results (in iterations).")
     args = parser.parse_args()
     
-    args.dataset = 'Omniglot'
-    args.mode = "train_test"
-    args.d_theta = 64 # "Size of the feature extractor output."
-    args.shot = 5 # "Number of training examples."
-    args.way = 2 # "Number of classes."
-    args.test_shot = 5 # Shot to be used at evaluation time. If not specified 'shot' will be used.")
-    args.test_way = 2 #"Way to be used at evaluation time. If not specified 'way' will be used.")
-    args.tasks_per_batch = 24
-    args.samples = 10 # "Number of samples from q.")
-    args.learning_rate = 1e-4
-    args.iterations = 10
-    args.checkpoint_dir = './models/omniglot_test'
-    args.dropout = 0.9
-    args.test_model_path = './models/omniglot_test'
-    args.print_freq = 2
+    # args.dataset = 'Omniglot'
+    # args.mode = "train_test"
+    # args.d_theta = 64 # "Size of the feature extractor output."
+    # args.shot = 5 # "Number of training examples."
+    # args.way = 2 # "Number of classes."
+    # args.test_shot = 5 # Shot to be used at evaluation time. If not specified 'shot' will be used.")
+    # args.test_way = 2 #"Way to be used at evaluation time. If not specified 'way' will be used.")
+    # args.tasks_per_batch = 24
+    # args.samples = 10 # "Number of samples from q.")
+    # args.learning_rate = 1e-4
+    # args.iterations = 10
+    # args.checkpoint_dir = './models/omniglot_test'
+    # args.dropout = 0.9
+    # args.test_model_path = './models/omniglot_test'
+    # args.print_freq = 2
 
     # adjust test_shot and test_way if necessary
     if args.test_shot is None:
