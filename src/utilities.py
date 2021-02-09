@@ -99,6 +99,36 @@ def conv2d_pool_block_custom(inputs, use_batch_norm, dropout_keep_prob, pool_pad
     return h
 
 
+def custom_conv2d_block(inputs, pool_padding, name, filters):
+    """
+    A macro function that implements the following in sequence:
+    - conv2d
+    - batch_norm
+    - relu activation
+    - dropout
+    - max_pool
+    :param inputs: batch of feature maps.
+    :param use_batch_norm: whether to use batch normalization or not.
+    :param name: first part of the name used to scope this sequence of operations.
+    :return: the processed batch of feature maps.
+    """
+    h = tf.layers.conv2d(
+        inputs=inputs,
+        strides=(1, 1),
+        filters=filters,
+        kernel_size=[5, 5],
+        padding="valid",
+        use_bias=True,
+        name=(name + '_conv2d'),
+        reuse=tf.AUTO_REUSE)
+
+    h = tf.nn.relu(features=h, name=(name + '_batch_relu'))
+    
+    h = tf.layers.max_pooling2d(inputs=h, pool_size=[2, 2], strides=2, padding=pool_padding, name=(name + '_pool'))
+
+    return h
+
+
 def conv2d_pool_block(inputs, use_batch_norm, dropout_keep_prob, pool_padding, name):
     """
     A macro function that implements the following in sequence:

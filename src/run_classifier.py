@@ -39,7 +39,7 @@ import numpy as np
 import tensorflow as tf
 import argparse
 import celeba_test_utils
-from features import extract_features_omniglot, extract_features_mini_imagenet, extract_features_celeba
+from features import extract_features_omniglot, extract_features_mini_imagenet, extract_features_celeba, extract_custom_features_omniglot
 from inference import infer_classifier
 from utilities import sample_normal, multinoulli_log_density, print_and_log, get_log_files
 from data import get_data
@@ -83,20 +83,20 @@ def parse_command_line():
     #                     help="Frequency of summary results (in iterations).")
     args = parser.parse_args()
     
-    args.dataset = 'celebA'
-    args.mode = "test"
+    args.dataset = 'Omniglot'
+    args.mode = "train_test"
     args.d_theta = 64 # "Size of the feature extractor output."
     args.shot = 5 # "Number of training examples."
     args.way = 2 # "Number of classes."
     args.test_shot = 5 # Shot to be used at evaluation time. If not specified 'shot' will be used.")
     args.test_way = 2 #"Way to be used at evaluation time. If not specified 'way' will be used.")
-    args.tasks_per_batch = 6
+    args.tasks_per_batch = 24
     args.samples = 10 # "Number of samples from q.")
     args.learning_rate = 1e-4
-    args.iterations = 10000
-    args.checkpoint_dir = './models/way2shot5'
+    args.iterations = 10
+    args.checkpoint_dir = './models/omniglot_test'
     args.dropout = 0.9
-    args.test_model_path = './models/way2shot5'
+    args.test_model_path = './models/omniglot_test'
     args.print_freq = 2
 
     # adjust test_shot and test_way if necessary
@@ -123,7 +123,7 @@ def main(unused_argv):
     # set the feature extractor based on the dataset
     feature_extractor_fn = extract_features_mini_imagenet
     if args.dataset == "Omniglot":
-        feature_extractor_fn = extract_features_omniglot
+        feature_extractor_fn = extract_custom_features_omniglot
     if args.dataset == "celebA":
         feature_extractor_fn = extract_features_celeba
 

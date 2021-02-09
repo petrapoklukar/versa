@@ -39,18 +39,18 @@ def get_transform_images(df, path, base_folder):
     return np.concatenate(imgs)
 
 def main():
-    load_path = '/local_storage/datasets/celeba/celeba'
-    save_path = 'datasets/celeba/'
-    # load_path = '../datasets/celeba/celeba/'
-    # save_path = load_path
+    # load_path = '/local_storage/datasets/celeba/celeba'
+    # save_path = 'datasets/celeba/'
+    load_path = '../datasets/celeba/celeba/'
+    save_path = load_path
     attribute_filename = 'list_attr_celeba.txt'
     base_folder = 'img_align_celeba/'
     attr = pd.read_csv(os.path.join(load_path, attribute_filename), delim_whitespace=True, header=1)
     attr = (attr + 1) // 2
     
-    n_train_imgs = 162770
-    n_validation_imgs = 19867
-    n_test_imgs = 19962
+    n_train_imgs = 500# 162770
+    n_validation_imgs = 500 #19867
+    n_test_imgs = 500 #19962
 
     # train_attr_names = ['Oval_Face', 'Attractive', 'Mustache', 'Male', 'Pointy_Nose', 'Bushy_Eyebrows', 
     #                     'Blond_Hair', 'Rosy_Cheeks', 'Receding_Hairline', 'Eyeglasses', 'Goatee', 'Brown_Hair', 
