@@ -58,7 +58,7 @@ class OmniglotData(object):
         """
         np.random.seed(seed)
 
-        data = np.load(path)
+        data = np.load(path, allow_pickle=True)
         np.random.shuffle(data)
 
         self.instances_per_char = 20
