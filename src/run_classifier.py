@@ -121,7 +121,7 @@ def main(unused_argv):
     data = get_data(args.dataset)
 
     # set the feature extractor based on the dataset
-    feature_extractor_fn = extract_features_mini_imagenet
+    feature_extractor_fn = extract_custom_features_omniglot
     if args.dataset == "Omniglot":
         feature_extractor_fn = extract_custom_features_omniglot
     if args.dataset == "celebA":
