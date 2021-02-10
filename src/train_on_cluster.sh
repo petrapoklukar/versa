@@ -11,7 +11,7 @@ RUNS_PATH="${SOURCE_PATH}/slurm_logs/"
 echo $RUNS_PATH
 mkdir -p $RUNS_PATH
 
-for way in 5 20; do
+for way in 5; do
 for shot in 1 5; do 
 
 "${SBATCH_OR_CAT}" << HERE
@@ -30,15 +30,14 @@ echo "Activating conda environment"
 conda activate base
 nvidia-smi
 
-python3 run_classifier.py --mode "train_test" --dataset "Omniglot" \
+python3 run_classifier.py --mode "train_test" --dataset "miniImageNet" \
                           --d_theta 64 \
                           --way ${way} --shot ${shot} \
                           --tasks_per_batch 24 --samples 10 \
                           --learning_rate 1e-4 --iterations 10000 \
                           --dropout 0.9 \
-                          --checkpoint_dir "models/omniglot_way${way}shot${shot}" \
+                          --checkpoint_dir "models/miniimagenet_way${way}shot${shot}" \
                           --print_freq 1000
-                          
 
 HERE
 done 
