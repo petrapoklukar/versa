@@ -140,12 +140,12 @@ class CelebAData(object):
             positive_attr = pos_attr
             while j < 3 and (i+j) < tasks_per_batch:
                 positive_images, negative_images, positive_attr = self.filter_attr(
-                    source, num_attr_s, num_support, positive_attr)
+                    source, num_attr_s, shot, positive_attr)
                 # Support set gets 3 attributes - amiguous setting 
                 assert(positive_images.shape == negative_images.shape)
                 support_imgs = np.concatenate([positive_images, negative_images])
-                support_labels = np.concatenate([np.repeat(1, num_support), np.repeat(0, num_support)])
-                support_permutation = np.arange(num_support * way) # Permute positive and negative samples
+                support_labels = np.concatenate([np.repeat(1, shot), np.repeat(0, shot)])
+                support_permutation = np.arange(shot * way) # Permute positive and negative samples
                 np.random.shuffle(support_permutation)
                 xs[i+j], ys[i+j] = support_imgs[support_permutation], support_labels[support_permutation]
                 
