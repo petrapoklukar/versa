@@ -43,7 +43,7 @@ class CelebAData(object):
         self.image_width = 84
         self.image_channels = 3
 
-        self.path = 'datasets/celeba'
+        self.path = '../../datasets/celeba'
         # self.path = '/local_storage/datasets/celeba/celeba'# 
         # self.path = '/home/petra/Documents/PhD/Repos/datasets/celeba/celeba'
         # self.base_folder = "img_align_celeba/"
@@ -107,7 +107,7 @@ class CelebAData(object):
 
         return [train_images, test_images, train_labels, test_labels]
 
-    def _sample_batch(self, source, tasks_per_batch, shot, way, eval_samples):
+    def _sample_batch(self, source, tasks_per_batch, shot, way, eval_samples, pos_attr=np.array([-1,-1, -1])):
         """
         Sample a k-shot batch from images.
         :param images: Data to sample from [way, samples, h, w, c] (either of train, val, test)
@@ -130,26 +130,59 @@ class CelebAData(object):
                       dtype=np.float32)
         yq = np.zeros((tasks_per_batch, way * eval_samples), dtype=np.int32)
         
-        for i in range(tasks_per_batch):
-            # Support set gets 3 attributes - amiguous setting 
-            positive_images, negative_images, manual_attr = self.filter_attr(source, 3, shot)
-            assert(positive_images.shape == negative_images.shape)
-            
-            support_imgs = np.concatenate([positive_images, negative_images])
-            support_labels = np.concatenate([np.repeat(1, shot), np.repeat(0, shot)])
-            support_permutation = np.arange(shot * way) # Permute positive and negative samples
-            np.random.shuffle(support_permutation)
-            xs[i], ys[i] = support_imgs[support_permutation], support_labels[support_permutation]
+        indices = [[0,1],[0,2],[1,2]]
+        num_attr_q = 2
+        num_attr_s = 3
+        
+        i = 0
+        while i < tasks_per_batch:
+            j = 0
+            positive_attr = pos_attr
+            while j < 3 and (i+j) < tasks_per_batch:
+                positive_images, negative_images, positive_attr = self.filter_attr(
+                    source, num_attr_s, num_support, positive_attr)
+                # Support set gets 3 attributes - amiguous setting 
+                assert(positive_images.shape == negative_images.shape)
+                support_imgs = np.concatenate([positive_images, negative_images])
+                support_labels = np.concatenate([np.repeat(1, num_support), np.repeat(0, num_support)])
+                support_permutation = np.arange(num_support * way) # Permute positive and negative samples
+                np.random.shuffle(support_permutation)
+                xs[i+j], ys[i+j] = support_imgs[support_permutation], support_labels[support_permutation]
+                
+                # Query set gets 2 attributes - non-amiguous setting
+                pos_attr_q = positive_attr[indices[j]]
+                positive_images, negative_images, positive_attr2 = self.filter_attr(
+                    source, num_attr_q, eval_samples, pos_attr_q)
+                assert(positive_images.shape == negative_images.shape)
 
-            # Query set gets 2 attributes - non-amiguous setting 
-            positive_images, negative_images, _ = self.filter_attr(source, 2, eval_samples, manual_attr=manual_attr)
-            assert(positive_images.shape == negative_images.shape)
+                query_imgs = np.concatenate([positive_images, negative_images])
+                query_labels = np.concatenate([np.repeat(1, eval_samples), np.repeat(0, eval_samples)])
+                query_permutation = np.arange(eval_samples * way) # Permute positive and negative samples
+                np.random.shuffle(query_permutation)
+                xq[i+j], yq[i+j] = query_imgs[query_permutation], query_labels[query_permutation]
+                j+= 1
+            i+=3
+                
+        # for i in range(tasks_per_batch):
+        #     # Support set gets 3 attributes - amiguous setting 
+        #     positive_images, negative_images, manual_attr = self.filter_attr(source, 3, shot)
+        #     assert(positive_images.shape == negative_images.shape)
             
-            query_imgs = np.concatenate([positive_images, negative_images])
-            query_labels = np.concatenate([np.repeat(1, eval_samples), np.repeat(0, eval_samples)])
-            query_permutation = np.arange(eval_samples * way) # Permute positive and negative samples
-            np.random.shuffle(query_permutation)
-            xq[i], yq[i] = query_imgs[query_permutation], query_labels[query_permutation]
+        #     support_imgs = np.concatenate([positive_images, negative_images])
+        #     support_labels = np.concatenate([np.repeat(1, shot), np.repeat(0, shot)])
+        #     support_permutation = np.arange(shot * way) # Permute positive and negative samples
+        #     np.random.shuffle(support_permutation)
+        #     xs[i], ys[i] = support_imgs[support_permutation], support_labels[support_permutation]
+
+        #     # Query set gets 2 attributes - non-amiguous setting 
+        #     positive_images, negative_images, _ = self.filter_attr(source, 2, eval_samples, manual_attr=manual_attr)
+        #     assert(positive_images.shape == negative_images.shape)
+            
+        #     query_imgs = np.concatenate([positive_images, negative_images])
+        #     query_labels = np.concatenate([np.repeat(1, eval_samples), np.repeat(0, eval_samples)])
+        #     query_permutation = np.arange(eval_samples * way) # Permute positive and negative samples
+        #     np.random.shuffle(query_permutation)
+        #     xq[i], yq[i] = query_imgs[query_permutation], query_labels[query_permutation]
 
         # labels to one-hot encoding
         ys = onehottify_2d_array(ys)
@@ -232,11 +265,11 @@ class CelebAData(object):
             
         # Randomly sample the attributes
         if manual_attr[0] < 0 and source == 'train':
-            positive_attr_idx = np.random.choice(self.train_attr_idx, size=num_attr)
+            positive_attr_idx = np.random.choice(self.train_attr_idx, size=num_attr, replace=False)
         elif manual_attr[0] < 0 and source == 'validation':
-            positive_attr_idx = np.random.choice(self.validation_attr_idx, size=num_attr)
+            positive_attr_idx = np.random.choice(self.validation_attr_idx, size=num_attr, replace=False)
         elif manual_attr[0] < 0 and source == 'test':
-            positive_attr_idx = np.random.choice(self.test_attr_idx, size=num_attr)
+            positive_attr_idx = np.random.choice(self.test_attr_idx, size=num_attr, replace=False)
         # Ensure that query gets the same attributes
         elif len(manual_attr) > num_attr:
             positive_attr_idx = np.random.choice(manual_attr, num_attr, replace=False)
