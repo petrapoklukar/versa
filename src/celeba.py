@@ -273,6 +273,8 @@ class CelebAData(object):
         # Ensure that query gets the same attributes
         elif len(manual_attr) > num_attr:
             positive_attr_idx = np.random.choice(manual_attr, num_attr, replace=False)
+        else:
+            positive_attr_idx = manual_attr
                 
         
         positive_condition = (attr_df.iloc[:, positive_attr_idx] == 1).sum(axis=1) == num_attr
