@@ -12,7 +12,7 @@ def extract_features_celeba(images, output_size, use_batch_norm, dropout_keep_pr
     """
 
     # 4X conv2d + pool blocks
-    h = (images, use_batch_norm, dropout_keep_prob, 'same','fe_block_1', 64)
+    h = conv2d_pool_block_custom(images, use_batch_norm, dropout_keep_prob, 'same','fe_block_1', 64)
     h = conv2d_pool_block_custom(h, use_batch_norm, dropout_keep_prob, 'same','fe_block_2', 64)
     h = conv2d_pool_block_custom(h, use_batch_norm, dropout_keep_prob, 'same','fe_block_3', 64)
     h = conv2d_pool_block_custom(h, use_batch_norm, dropout_keep_prob, 'same', 'fe_block_4', 16)
