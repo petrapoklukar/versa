@@ -184,7 +184,6 @@ class CelebAData(object):
         #     np.random.shuffle(query_permutation)
         #     xq[i], yq[i] = query_imgs[query_permutation], query_labels[query_permutation]
 
-        print(xs.shape, xq.shape, ys.shape, yq.shape)
         # labels to one-hot encoding
         ys = onehottify_2d_array(ys)
         yq = onehottify_2d_array(yq)

@@ -62,3 +62,5 @@ HERE
 #                           --dropout 0.9 \
 #                           --checkpoint_dir "models/miniimagenet_way${way}shot${shot}" \
 #                           --print_freq 1000
+
+
