@@ -87,9 +87,9 @@ def parse_command_line():
     args.samples = 10  # "Number of samples from q.")
     args.learning_rate = 1e-4
     args.iterations = 10000
-    args.checkpoint_dir = './models/way2shot5'
+    args.checkpoint_dir = './models/versa_date210424_celeba_way2shot5'
     args.dropout = 0.9
-    args.test_model_path = './models/way2shot5/theta64_bs6_s10_lr1e4_10k/fully_trained'
+    args.test_model_path = './models/versa_date210424_celeba_way2shot5/2021-04-26-13-43-50/fully_trained'
     args.print_freq = 2
 
     # adjust test_shot and test_way if necessary
@@ -319,7 +319,7 @@ def main(unused_argv):
         if args.mode == 'test':
             test_model(args.test_model_path)
 
-        def test_celeba(model_path, load=True):
+        def test_celeba(model_path, load=True, path_to_save_results=''):
             if load:
                 saver.restore(sess, save_path=model_path)
             test_eval_samples = 5  # number of query points
@@ -336,8 +336,11 @@ def main(unused_argv):
             n_test_examples = 0
             for i in cycle(range(data.n_test_triplets)):
                 n_test_examples += 1
-                train_inputs, test_inputs, train_outputs, test_outputs = data.get_test_triplet_batch_new(
-                    args.test_shot, args.test_way, test_eval_samples, i)
+                train_inputs, test_inputs, train_outputs, test_outputs = data.get_batch(
+                    'test', 3, args.test_shot, args.test_way, test_eval_samples)
+                
+                # train_inputs, test_inputs, train_outputs, test_outputs = data.get_test_triplet_batch_new(
+                #     args.test_shot, args.test_way, test_eval_samples, i)
                 
                 print(train_inputs.shape, test_inputs.shape, train_outputs.shape, test_outputs.shape)
                 # split out batch                
@@ -424,9 +427,21 @@ def main(unused_argv):
             print("all_coverage confidence: {}".format(np.std(coverage) * 1.96 / np.sqrt(len(coverage))))
             # print("all_logprob: {}".format(np.mean(all_log_probs)))
             # print("all_logprobs confidence: {}".format(np.std(all_log_probs) * 1.96 / np.sqrt(len(all_log_probs))))
+            if path_to_save_results != '':
+                with open(path_to_save_results, 'a') as f:
+                    f.write('\n\nIteration: {0}, test axample {1}\n'.format(i, n_test_examples))
+                    f.write("all_accuracy: {}\n".format(np.mean(all_accuracy)))
+                    f.write("all_accuracy confidence: {}\n".format(np.std(all_accuracy) * 1.96 / np.sqrt(len(all_accuracy))))
+                    f.write("all_coverage: {}\n".format(np.mean(coverage)))
+                    f.write("all_coverage confidence: {}\n".format(np.std(coverage) * 1.96 / np.sqrt(len(coverage))))
+
+            if path_to_save_results != '':
+                with open(path_to_save_results, 'a') as f:
+                    f.write('Model: {0}\n'.format(path_to_save_results))
+
 
         if args.mode == 'test_celeba':
-            test_celeba(args.test_model_path)
+            test_celeba(args.test_model_path, path_to_save_results=args.checkpoint_dir + '.txt')
 
 
 if __name__ == "__main__":

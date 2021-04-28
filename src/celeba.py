@@ -43,9 +43,9 @@ class CelebAData(object):
         self.image_width = 84
         self.image_channels = 3
 
-        self.path = '../../datasets/celeba'
+        #self.path = '../../datasets/celeba'
         # self.path = '/local_storage/datasets/celeba/celeba'# 
-        # self.path = '/home/petra/Documents/PhD/Repos/datasets/celeba/celeba'
+        self.path = '/home/petra/Documents/PhD/Repos/datasets/celeba/celeba'
         # self.base_folder = "img_align_celeba/"
         # self.attribute_filename = 'list_attr_celeba.txt'
         
@@ -494,10 +494,10 @@ class CelebAData(object):
         return [inputa, inputb, labela, labelb]
 
 
-dataset = CelebAData(123)
-dataset.init_testing_params(2)
-dataset.get_test_triplet_batch_new(5, 2, 7, 0)
-r = dataset._sample_batch('test', 3, 5, 2, 7)
+# dataset = CelebAData(123)
+# dataset.init_testing_params(2)
+# dataset.get_test_triplet_batch_new(5, 2, 7, 0)
+# r = dataset._sample_batch('test', 3, 5, 2, 7)
 
 def test():
     print('done')
